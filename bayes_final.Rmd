@@ -1,0 +1,863 @@
+---
+title: "FINAL_BAYES"
+author: "Andrés Úsuga"
+date: "2023-06-01"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+```{r}
+library(readxl)
+datos <- read.csv('pruebas_saber_11.csv',sep = ";", encoding = "UTF-8")
+```
+
+
+```{r}
+antioquia <- datos[datos$estu_depto_reside == "antioquia", ]
+names(antioquia)
+```
+
+```{r}
+# Propuesta de Modelo 1: Modelo de Regresión Lineal Clásico
+
+# Considerando solo las siguientes variables: 
+
+# estu_tieneetnia
+# cole_jornada
+# fami_educacionpadre
+# fami_educacionmadre
+
+
+# Convirtiendo las variables en facor:
+
+antioquia$estu_tieneetnia <- as.factor(antioquia$estu_tieneetnia)
+antioquia$cole_jornada <- as.factor(antioquia$cole_jornada)
+antioquia$fami_educacionpadre <- as.factor(antioquia$fami_educacionpadre)
+antioquia$fami_educacionmadre <- as.factor(antioquia$fami_educacionmadre)
+antioquia$estu_nse_individual <- as.factor(antioquia$estu_nse_individual)
+ 
+
+# Eliminando los valores vacíos en las variables fami_educacionpadre y fami_educacionmadre
+
+
+
+antioquia2 <- subset(antioquia, fami_educacionpadre != "")
+
+base.final <- subset(antioquia2, fami_educacionmadre != "" )
+
+
+
+#raquel + con el estrato
+#Recorte de variables (unir indicadoras)
+base.final <- subset(base.final, fami_estratovivienda !="")
+base.final <- droplevels(base.final)
+base.final$fami_estratovivienda <- as.factor(base.final$fami_estratovivienda)
+
+base.final <- subset(base.final, estu_nse_individual !="")
+base.final <- droplevels(base.final)
+
+base.final <- subset(base.final, fami_comelechederivados !="")
+base.final <- droplevels(base.final)
+base.final$fami_comelechederivados <- as.factor(base.final$fami_comelechederivados)
+
+base.final <- subset(base.final, fami_comecerealfrutoslegumbre !="")
+base.final <- droplevels(base.final)
+base.final$fami_comecerealfrutoslegumbre <- as.factor(base.final$fami_comecerealfrutoslegumbre)
+
+base.final <- subset(base.final, fami_comecarnepescadohuevo !="")
+base.final <- droplevels(base.final)
+base.final$fami_comecarnepescadohuevo <- as.factor(base.final$fami_comecarnepescadohuevo)
+
+base.final <- subset(base.final, cole_naturaleza !="")
+base.final <- droplevels(base.final)
+base.final$cole_naturaleza <- as.factor(base.final$cole_naturaleza)
+
+base.final <- subset(base.final, cole_area_ubicacion !="")
+base.final <- droplevels(base.final)
+base.final$cole_area_ubicacion <- as.factor(base.final$cole_area_ubicacion)
+
+base.final <- subset(base.final, fami_numlibros !="")
+base.final <- droplevels(base.final)
+base.final$fami_numlibros <- as.factor(base.final$fami_numlibros)
+
+
+base.final <- subset(base.final, fami_tienelavadora !="")
+base.final <- droplevels(base.final)
+base.final$fami_tienelavadora <- as.factor(base.final$fami_tienelavadora)
+
+base.final <- subset(base.final, fami_estratovivienda !="")
+base.final <- subset(base.final, fami_estratovivienda !="sin estrato")
+base.final <- droplevels(base.final)
+base.final$fami_estratovivienda <- as.factor(base.final$fami_estratovivienda)
+
+
+
+
+# Creando una nueva base de datos con nuevas variables:
+
+
+base.final$jornada2 <- ifelse(base.final$cole_jornada %in% c("completa", "mañana", "tarde", "unica"), "Normal", "Diferente")
+
+base.final$jornada2 <- as.factor(base.final$jornada2)
+
+library(dplyr)
+
+base.final$educacionpadre2 <- recode(base.final$fami_educacionpadre,
+                                    "ninguno" = "NO",
+                                    "primaria completa" = "Primaria",
+                                    "primaria incompleta" = "Primaria",
+                                    "secundaria (bachillerato) incompleta" = "Bachiller",
+                                    "secundaria (bachillerato) completa" = "Bachiller",
+                                    "técnica o tecnológica completa" = "T",
+                                    "técnica o tecnológica incompleta" = "T",
+                                    "educación profesional completa" = "Pregrado",
+                                    "educación profesional incompleta" = "Pregrado",
+                                    "postgrado" = "Postgrado",
+                                    "no sabe" = "NA",
+                                    "no aplica" = "NA")
+
+
+
+base.final$educacionmadre2 <- recode(base.final$fami_educacionmadre,
+                                    "ninguno" = "NO",
+                                    "primaria completa" = "Primaria",
+                                    "primaria incompleta" = "Primaria",
+                                    "secundaria (bachillerato) incompleta" = "Bachiller",
+                                    "secundaria (bachillerato) completa" = "Bachiller",
+                                    "técnica o tecnológica completa" = "T",
+                                    "técnica o tecnológica incompleta" = "T",
+                                    "educación profesional completa" = "Pregrado",
+                                    "educación profesional incompleta" = "Pregrado",
+                                    "postgrado" = "Postgrado",
+                                    "no sabe" = "NA",
+                                    "no aplica" = "NA")
+
+base.final <- subset(base.final, educacionmadre2 !="NA")
+base.final <- subset(base.final, educacionpadre2 !="NA")
+base.final <- droplevels(base.final)
+
+
+base.final$fami_numlibros <- recode(base.final$fami_numlibros,
+                                    "0 a 10 libros" = "0-10",
+                                    "11 a 25 libros" = "11-25",
+                                    "26 a 100 libros" = "26-100",
+                                    "más de 100 libros" = "+100")
+
+
+base.final$fami_comelechederivados <- recode(base.final$fami_comelechederivados,
+                                     "todos o casi todos los días" = "LDusual",
+                                          "3 a 5 veces por semana" = "LDusual",
+                                         "1 o 2 veces por semana" = "LDinusual",
+                                   "nunca o rara vez comemos eso" = "LDinusual")
+
+base.final$fami_comecarnepescadohuevo <- recode(base.final$fami_comecarnepescadohuevo,
+                                             "todos o casi todos los días" = "CPHusual",
+                                                  "3 a 5 veces por semana" = "CPHusual",
+                                                  "1 o 2 veces por semana" = "CPHinusual",
+                                             "nunca o rara vez comemos eso" = "CPHinusual")
+
+base.final$fami_comecerealfrutoslegumbre <- recode(base.final$fami_comecerealfrutoslegumbre,
+                                                "todos o casi todos los días" = "CFLusual",
+                                                     "3 a 5 veces por semana" = "CFLusual",
+                                                    "1 o 2 veces por semana" = "CFLinusual",
+                                               "nunca o rara vez comemos eso" = "CFLinusual")
+
+# Verificar las categorías únicas de 'fami_educacionpadre' después de combinarlas en pares
+#unique(datos$fami_educacionpadre)
+
+# Fijando los niveles de referencia: 
+
+base.final$estu_tieneetnia <- relevel(base.final$estu_tieneetnia, ref = "si")
+base.final$jornada2 <- relevel(base.final$jornada2, ref = "Diferente")
+base.final$educacionpadre2 <- relevel(base.final$educacionpadre2, ref = "NO")
+base.final$educacionmadre2 <- relevel(base.final$educacionmadre2, ref = "NO")
+base.final$cole_naturaleza <- relevel(base.final$cole_naturaleza, ref = "oficial")
+base.final$cole_area_ubicacion <- relevel(base.final$cole_area_ubicacion, ref = "rural")
+base.final$fami_numlibros <- relevel(base.final$fami_numlibros, ref = "0-10")
+base.final$fami_tienelavadora <- relevel(base.final$fami_tienelavadora, ref = "no")
+base.final$fami_estratovivienda <- relevel(base.final$fami_estratovivienda, ref = "estrato 1")
+
+
+base.final$fami_comelechederivados<- relevel(
+  base.final$fami_comelechederivados,
+  ref = "LDinusual")
+base.final$fami_comecarnepescadohuevo<-relevel(
+  base.final$fami_comecarnepescadohuevo,
+  ref = "CPHinusual")
+base.final$fami_comecerealfrutoslegumbre<-relevel(
+  base.final$fami_comecerealfrutoslegumbre,
+  ref = "CFLinusual")
+
+base.final$estu_nse_individual<-relevel(
+  base.final$estu_nse_individual,
+  ref = "nse1")
+
+```
+
+
+```{r}
+boxplot(punt_global~fami_estratovivienda, data = base.final, ylab = "Puntaje Global", xlab = "Caracter del colegio")
+```
+
+
+
+
+```{r}
+# Base de datos para el Modelo de Regresión Lineal Clásico
+set.seed(123)
+base.final <- base.final[sample(nrow(base.final),10000,replace=FALSE),]
+test <- base.final[9001:10000,]
+base.final <- base.final[1:9000,]
+
+base.modelo1 <- base.final[, c("punt_global", "estu_tieneetnia", "jornada2", "educacionpadre2", "educacionmadre2", "fami_comelechederivados", "fami_comecerealfrutoslegumbre", "fami_comecarnepescadohuevo", "cole_naturaleza", "cole_area_ubicacion", "fami_numlibros", "fami_tienelavadora", "fami_estratovivienda", "estu_nse_individual")]
+base.modelo1 <- droplevels(base.modelo1)
+```
+
+
+```{r}
+table(base.modelo1$fami_numlibros)
+```
+
+
+```{r}
+library(rstan)
+
+# Puntaje global 
+
+y = base.modelo1$punt_global
+
+# Si el estudiante tiene etnia o no 
+x1 = base.modelo1$estu_tieneetnia
+
+# Jornada del colegio del estudiante
+x2 = base.modelo1$jornada2
+
+# NSE individual para cada estudiante 
+x3 = base.modelo1$estu_nse_individual
+
+# Naturaleza del Colegio 
+
+x4 = base.modelo1$cole_naturaleza
+
+# Ubicación del Colegio
+
+x5 = base.modelo1$cole_area_ubicacion
+
+# Número de Libros en la Familia
+
+x6 = base.modelo1$fami_numlibros
+
+
+N = dim(base.modelo1)[1]
+
+# Construyendo la matriz de diseño
+
+
+
+X = model.matrix(~ x1 + x2 + x3 + x4 + x5 + x6 )
+
+
+data.stan.modelo1 = list("y" = y,
+                 "X" = X,
+                 "N" =N,
+                 "p" = dim(X)[2])
+ajuste.modelo1 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo1, chains = 4, iter = 9000, cores = 4)
+```
+
+```{r}
+ajuste.modelo1
+```
+
+```{r}
+library(ggplot2)
+dev.new()
+fit <- ajuste.modelo1 #cambiar por el que modelo que se ajuste
+plot(fit,pars = c("beta", "sigma", "sigma2"))
+plot(fit, show_density = TRUE,pars = c("beta"),ci_level =
+0.95, fill_color = "purple")
+plot(fit, plotfun = "hist", pars = c("beta", "sigma2"))
+plot(fit, plotfun = "trace", pars = c("beta","sigma", "sigma2"),
+inc_warmup = TRUE)
+plot(fit, plotfun = "rhat") + ggtitle("Example of adding title to plot")
+```
+
+
+```{r}
+fit <- as.matrix(ajuste.modelo1)
+traceplot(ajuste.modelo1, pars= c("beta","sigma2"))
+#preguntar por que arriba dio diferente el de sigma2
+```
+
+
+```{r}
+#Intervalos HDI para Beta_i
+
+
+beta.poste <- extract(fit,pars="beta")
+beta.poste <- beta.poste[[1]]
+
+
+library(HDInterval)
+dev.new()
+par(mfrow=c(4,3))
+for(i in 1:11){
+  #Inicio
+  HDI.interval.beta <- hdi(beta.poste[,i])
+  value1 <- HDI.interval.beta[1]
+  value2 <- HDI.interval.beta[2]
+  DENSITITY.BETA <- density(beta.poste[,i])
+  plot(DENSITITY.BETA, main = "Densidad Posterior", xlab =
+parse(text=(paste0("beta[",i,"]"))))
+  DENSITITY.BETAy <- DENSITITY.BETA$y
+  DENSITITY.BETAx <- DENSITITY.BETA$x
+  # Lower and higher indices on the X-axis
+  l <- min(which(DENSITITY.BETAx >= value1))
+  h <- max(which(DENSITITY.BETAx < value2))
+
+  polygon(c(DENSITITY.BETAx[c(l, l:h, h)]),
+          c(0, DENSITITY.BETAy[l:h], 0),
+          col = "slateblue1")
+  #Fin
+}
+```
+
+
+```{r}
+#acf 
+dev.new()
+betas = extract(ajuste.modelo1, pars = "beta")
+par(mfrow=c(3,4))
+for (i in seq(11)){
+acf(betas[[1]][,i])
+}
+```
+
+```{r}
+parametros = data.frame(media=get_posterior_mean(ajuste.modelo1)[,5])
+parametros
+```
+
+
+```{r}
+library(rstan)
+library(HDInterval)
+library(BayesFactor)
+library(StanHeaders)
+datos4 = data.frame(Puntaje=y, x2 = X[,2], x3 = X[,3], x4 = X[,4], x5 = X[,5],
+                   x6 = X[,6], x7 = X[,7], x8 = X[,8], x9 = X[,9],
+                   x10 = X[,10], x11 = X[,11])
+
+#Comparacion contra el modelo mas simple (solo con el intercepto)
+BFModelSelection = regressionBF(Puntaje ~ ., data=datos4, progress = TRUE)
+max(BFModelSelection[638:847])
+
+```
+1 -10     1
+x3 : 6.140643e+275 ±0.01%
+
+11-55     2
+x3 + x6 : 1.354593e+480 ±0%
+
+56-175    3
+x3 + x5 + x6 : 1.287097e+613 ±0%
+
+176-385   4
+x3 + x5 + x6 + x8 : 2.168393e+643 ±0.01%
+
+386-637   5
+x3 + x5 + x6 + x8 + x10 : 1.590947e+665 ±0%
+
+638-847   6
+x3 + x5 + x6 + x8 + x10 + x11 : 6.139549e+686 ±0%
+
+848-967   7
+x3 + x5 + x6 + x8 + x9 + x10 + x11 : 5.945261e+705 ±0.01%
+
+968-1012  8
+x2 + x3 + x5 + x6 + x8 + x9 + x10 + x11 : 1.024184e+717 ±0.01%
+
+1013-1022 9
+x2 + x3 + x5 + x6 + x7 + x8 + x9 + x10 + x11 : 2.767244e+722 ±0%
+
+1023      10
+x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 :8.958992e+726 ±0%
+
+```{r}
+BFModelSelection/max(BFModelSelection)
+```
+
+
+
+
+
+
+
+
+
+```{r}
+testsin <- test[,-77] #77 es el puntaje global
+y = testsin$punt_global
+# Si el estudiante tiene etnia o no 
+x11 = testsin$estu_tieneetnia
+# Jornada del colegio del estudiante
+x22 = testsin$jornada2
+# NSE individual para cada estudiante 
+x33 = testsin$estu_nse_individual
+# Naturaleza del Colegio 
+x44 = testsin$cole_naturaleza
+# Ubicación del Colegio
+x55 = testsin$cole_area_ubicacion
+# Número de Libros en la Familia
+x66 = testsin$fami_numlibros
+X00 = model.matrix(~ x11 + x22 + x33 + x44 + x55 + x66 )
+```
+
+
+```{r}
+#ajuste.modelo1
+beta <- extract(ajuste.modelo1, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo1, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X00%*%mean.beta
+error1 <- sqrt(mean((test$punt_global-pred)^2))
+error1
+```
+
+
+```{r}
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(ajuste.modelo1, pars = "beta")[[1]]
+# sigma <- extract(ajuste.modelo1, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(dnorm(base.modelo1$punt_global, X%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #92807.31
+
+
+```
+
+```{r}
+#sin NSE2
+X2 <- X[,-4]
+data.stan.modelo2 = list("y" = y,
+                 "X" = X2,
+                 "N" =N,
+                 "p" = dim(X2)[2])
+ajuste.modelo2 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo2, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-4]
+beta <- extract(ajuste.modelo2, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo2, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error2 <- sqrt(mean((test$punt_global-pred)^2))
+error2
+```
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X2%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X2%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# 
+# #167733.9
+```
+
+
+
+```{r}
+#sin no oficial ni nse2
+X3 <- X[,-c(4,7)]
+data.stan.modelo3 = list("y" = y,
+                 "X" = X3,
+                 "N" =N,
+                 "p" = dim(X3)[2])
+ajuste.modelo3 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo3, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-c(4,7)]
+beta <- extract(ajuste.modelo3, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo3, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error3 <- sqrt(mean((test$punt_global-pred)^2))
+error3
+```
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X3%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X3%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #167801.7
+```
+
+
+
+```{r}
+#si no o b2 ni, sin no oficial ni nse2
+X4 <- X[,-c(2,4,7)]
+data.stan.modelo4 = list("y" = y,
+                 "X" = X4,
+                 "N" =N,
+                 "p" = dim(X4)[2])
+ajuste.modelo4 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo4, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-c(2,4,7)]
+beta <- extract(ajuste.modelo4, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo4, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error4 <- sqrt(mean((test$punt_global-pred)^2))
+error4
+```
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X4%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X4%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #167912.5
+```
+
+
+
+```{r}
+#si no o b2 ni, sin no oficial ni nse2 ni 11-25
+X5 <- X[,-c(2,4,7,9)]
+data.stan.modelo5 = list("y" = y,
+                 "X" = X5,
+                 "N" =N,
+                 "p" = dim(X5)[2])
+ajuste.modelo5 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo5, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-c(2,4,7,9)]
+beta <- extract(ajuste.modelo5, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo5, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error5 <- sqrt(mean((test$punt_global-pred)^2))
+error5
+```
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X5%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X5%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #168104.8
+```
+
+
+
+```{r}
+#si no o b2 ni, sin no oficial ni nse2 ni 11-25
+X6 <- X[,-c(2,4,7,9,11)]
+data.stan.modelo6 = list("y" = y,
+                 "X" = X6,
+                 "N" =N,
+                 "p" = dim(X6)[2])
+ajuste.modelo6 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo6, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-c(2,4,7,9,11)]
+beta <- extract(ajuste.modelo6, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo6, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error6 <- sqrt(mean((test$punt_global-pred)^2))
+error6
+```
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X6%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X6%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #168323.1
+```
+
+
+
+```{r}
+#si no o b2 ni, sin no oficial ni nse2 ni 11-25
+X7 <- X[,-c(2,4,7,9,10,11)]
+data.stan.modelo7 = list("y" = y,
+                 "X" = X7,
+                 "N" =N,
+                 "p" = dim(X7)[2])
+ajuste.modelo7 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo7, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-c(2,4,7,9,10,11)]
+beta <- extract(ajuste.modelo7, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo7, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error7 <- sqrt(mean((test$punt_global-pred)^2))
+error7
+```
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X7%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X7%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #168323.1
+```
+
+
+
+```{r}
+#si no o b2 ni, sin no oficial ni nse2 ni 11-25
+X8 <- X[,-c(2,4,7,8,9,10,11)]
+data.stan.modelo8 = list("y" = y,
+                 "X" = X8,
+                 "N" =N,
+                 "p" = dim(X8)[2])
+ajuste.modelo8 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo8, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-c(2,4,7,8,9,10,11)]
+beta <- extract(ajuste.modelo8, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo8, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error8 <- sqrt(mean((test$punt_global-pred)^2))
+error8
+```
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X8%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X8%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #168323.1
+```
+
+
+
+```{r}
+#si no o b2 ni, sin no oficial ni nse2 ni 11-25
+X9 <- X[,-c(2,4,5,7,8,9,10,11)]
+data.stan.modelo9 = list("y" = y,
+                 "X" = X9,
+                 "N" =N,
+                 "p" = dim(X9)[2])
+ajuste.modelo9 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo9, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-c(2,4,5,7,8,9,10,11)]
+beta <- extract(ajuste.modelo9, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo9, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error9 <- sqrt(mean((test$punt_global-pred)^2))
+error9
+```
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X8%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X8%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #168323.1
+```
+
+
+
+```{r}
+#si no o b2 ni, sin no oficial ni nse2 ni 11-25
+X10 <- X[,-c(2,4,5,6,7,8,9,10,11)]
+data.stan.modelo10 = list("y" = y,
+                 "X" = X10,
+                 "N" =N,
+                 "p" = dim(X10)[2])
+ajuste.modelo10 <- stan(file = 'ModelodeReregresion.stan', 
+             data = data.stan.modelo10, chains = 4, iter = 9000, cores = 4)
+X0 <- X00[,-c(2,4,5,6,7,8,9,10,11)]
+beta <- extract(ajuste.modelo10, pars = "beta")[[1]]
+sigma <- extract(ajuste.modelo10, pars = "sigma")[[1]]
+mean.sigma <- mean(sigma)
+mean.beta <- apply(beta, 2, mean)
+pred <- X0%*%mean.beta
+error10 <- sqrt(mean((test$punt_global-pred)^2))
+error10
+```
+
+```{r}
+# fit <- ajuste.modelo2
+# # Extraer la muestra del parámetro del modelo
+# beta <- extract(fit, pars = "beta")[[1]]
+# sigma <- extract(fit, pars = "sigma")[[1]]
+# mean.sigma <- mean(sigma)
+# mean.beta <- apply(beta, 2, mean)
+# # Calcular el log-verosimilitud en el valor medio del parámetro
+# 
+# 
+# log_likelihood <- sum(log(pnorm(base.modelo1$punt_global, X8%*%mean.beta, sd= mean.sigma)))
+# 
+# # Calcular el log-verosimilitud esperado
+# expected_log_likelihood <- mean(sapply(1:dim(beta)[1], function(j) {
+#   sum(log(dnorm(base.modelo1$punt_global,  (X8%*%beta[j,]),sd=sigma[j])))
+# }))
+# 
+# # Calcular el DIC simplificado para un modelo logístico con un solo parámetro
+# DIC <-  -2*log_likelihood + 4*(log_likelihood - expected_log_likelihood)
+# DIC
+# #168323.1
+```
+
+
+
+
+
+
+```{r}
+#Prediccion en un valor X0 definido manualmente.
+library(rstan)
+X0 = c(1, 1 ,1, 0,1,0,1,1, 0, 0, 0)
+#X0 = c(1, 0 ,0, 0,0,0,0,0, 0, 0, 0)
+Beta.poste <- extract(ajuste.modelo1, pars= "beta")[[1]]
+
+y.mean = sapply(1:dim(Beta.poste)[1], function(i){X0%*%Beta.poste[i,]})
+plot(density(y.mean))
+
+y.pred = sapply(1:dim(Beta.poste)[1], function(i){rnorm(1, X0%*%Beta.poste[i,], Sigma.poste[i])})
+plot(density(y.pred))
+```
+Considerando la variabilidad de los datos y la poca especificidad del modelo, es algo factible  obtener un error de predicción grande en la escala de la respuesta, puesto que el modelo seleccionado no es el mejor en terminos de los criterios que se utilizaron, ya que por falta de recursos computacionales se tuvo que hacer una reducción muy abrasiva de la base de datos, la cual partía de tener 83 variables sin contar las categorías individuales de estas y terminó con solo 6 variables con 11 indicadoras-categorías, por otra parte la longitud de la base de datos se redujo al haber seleccionado el departamento de antioquia como el de residencia partiendo de aproximadamente 500000 datos y terminando en ~73000, y cayendo otra vez en los problemas de recursos computacionales se tuvo que elegir solo 9000 datos para ajustar el modelo, por lo tanto las conclusiones presentadas en este trabajo son solo un indicativo que puede estar seezgado por la forma en la que se entrenó el modelo y se seleccionaron las variables.
+
+
+
