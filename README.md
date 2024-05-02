@@ -7,6 +7,9 @@ https://rawcdn.githack.com/WispeTzar/Bayesiana/dcbadbe9669ba46004546b74d827212e5
 Todo este modelo se montó sobre una base depurada con anterioridad que puede ser encontrada en MEDATA.
 http://medata.gov.co/dataset/microdato-de-resultados-en-pruebas-saber-11
 
+## Modelamiento
+https://github.com/WispeTzar/Bayesiana/blob/main/bayes_final.Rmd
+
 ## autores
 - Latorre Bohorquez Raquel Juliana
 - Ruiz Herrera Julián David
