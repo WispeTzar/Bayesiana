@@ -1,5 +1,5 @@
 # Bayesiana
-Este projecto trata sobre el analisis mediante metodos bayersianos de la base de datos de las pruebas icfes 2018-2
+Este projecto trata sobre el análisis mediante metodos bayesianos de la base de datos pruebas icfes 2018-2
 ## Análisis descriptivo inicial
 https://rawcdn.githack.com/WispeTzar/Bayesiana/dcbadbe9669ba46004546b74d827212e50c0381b/Descrip.html
 
